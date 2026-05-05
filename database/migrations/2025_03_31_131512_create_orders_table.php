@@ -18,8 +18,10 @@ return new class extends Migration {
         });
     }
 
+
     public function down()
     {
+        Schema::dropIfExists('order_type_wastes');
         Schema::dropIfExists('orders');
     }
 };

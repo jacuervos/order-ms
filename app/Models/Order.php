@@ -13,4 +13,9 @@ class Order extends Model
         'date',
         'state_id',
     ];
+
+    public function orderTypeWastes()
+    {
+        return $this->hasMany(OrderTypeWaste::class);
+    }
 }
