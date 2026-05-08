@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderTypeWaste;
 use App\Http\Requests\OrderWithWastesStoreRequest;
+use App\Models\State;
 use Illuminate\Support\Facades\DB;
 
 class OrderWithWastesStoreController extends Controller
@@ -19,7 +20,7 @@ class OrderWithWastesStoreController extends Controller
                 'latitude'  => $request->latitude,
                 'longitude' => $request->longitude,
                 'date'      => $request->date,
-                'state_id'  => $request->state_id,
+                'state_id'  => State::where('name', State::ORDER_CREATION)->value('id'),
             ]);
 
             foreach ($request->items as $item) {

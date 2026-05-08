@@ -1,13 +1,17 @@
 <?php
-use App\Http\Controllers\OrderController;
+
+use App\Models\Rol;
 use App\Http\Controllers\CollectorController;
 use App\Http\Controllers\CollectorOrderController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
+    Route::post('orders/with-wastes', \App\Http\Controllers\OrderWithWastesStoreController::class); //crear orden desde usuario
+});
+
 Route::middleware('auth.jwt')->group(function () {
     Route::get('orders', \App\Http\Controllers\OrderIndexController::class);
     Route::post('orders', \App\Http\Controllers\OrderStoreController::class);
-    Route::post('orders/with-wastes', \App\Http\Controllers\OrderWithWastesStoreController::class);
     Route::get('orders/{order}', \App\Http\Controllers\OrderShowController::class);
     Route::put('orders/{order}', \App\Http\Controllers\OrderUpdateController::class);
     Route::patch('orders/{order}', \App\Http\Controllers\OrderUpdateController::class);

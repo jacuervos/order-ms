@@ -18,4 +18,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderTypeWaste::class);
     }
+
+    public function state()
+    {
+        return $this->belongsTo(State::class);
+    }
 }
