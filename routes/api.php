@@ -9,9 +9,9 @@ Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
     Route::post('orders/with-wastes', \App\Http\Controllers\OrderWithWastesStoreController::class); //crear orden desde usuario
 });
 
-Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
+//Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
     Route::get('orders/dashboard', \App\Http\Controllers\OrderIndexController::class.'@indexDashboard'); //Ver ordenes para el dashboard
-});
+//});
 
 Route::middleware('auth.jwt')->group(function () {
     Route::get('orders', \App\Http\Controllers\OrderIndexController::class);

@@ -38,4 +38,8 @@ return [
     'user_service' => [
         'url' => env('USER_URL'),
     ],
+
+    'waste_service' => [
+        'url' => env('WASTE_URL'),
+    ],
 ];

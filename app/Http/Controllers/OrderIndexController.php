@@ -23,11 +23,20 @@ class OrderIndexController extends Controller
             : Carbon::today();
         $orders = Order::whereDate('date', $date)->get();
         $token = $request->bearerToken();
+        $typeWasteResponse = Http::baseUrl(config('services.waste_service.url'))
+            ->withToken($token)
+            ->get("/type-wastes");
+        $typeWastes = collect($typeWasteResponse->json('data'))
+            ->keyBy('id');
         foreach ($orders as $order) {
             $response = Http::baseUrl(config('services.user_service.url'))
                 ->withToken($token)
                 ->get("/user/{$order->user_id}");
             $user = $response->json('data');
+            $order->orderTypeWastes->transform(function ($waste) use ($typeWastes) {
+                $waste->type_waste = $typeWastes[$waste->type_waste_id]['name'] ?? null;
+                return $waste;
+            });
             $order->user = $user;
         }
         return OrderResource::collection($orders);
