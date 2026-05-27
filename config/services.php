@@ -35,4 +35,7 @@ return [
         ],
     ],
 
+    'user_service' => [
+        'url' => env('USER_URL'),
+    ],
 ];
