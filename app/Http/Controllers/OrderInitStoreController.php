@@ -22,12 +22,12 @@ class OrderInitStoreController extends Controller
 
             $stateId = State::where('name', State::SERVICE_START)->value('id');
 
-            $orders = Order::whereIn('id', $validated['order_ids'])->get();
-
             Order::whereIn('id', $validated['order_ids'])
                 ->update([
                     'state_id' => $stateId,
                 ]);
+
+            $orders = Order::whereIn('id', $validated['order_ids'])->get();
 
             DB::commit();
 
