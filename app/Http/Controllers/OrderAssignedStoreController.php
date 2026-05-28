@@ -47,7 +47,7 @@ class OrderAssignedStoreController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear la orden: ' . $e->getMessage(),
+                'message' => 'Error al asignar el recolector: ' . $e->getMessage(),
             ], 500);
         }
     }
