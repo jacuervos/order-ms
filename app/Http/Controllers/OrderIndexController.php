@@ -31,4 +31,11 @@ class OrderIndexController extends Controller
         }
         return OrderResource::collection($orders);
     }
+
+    public function index()
+    {
+        $orders = Order::orderBy('id', 'DESC')
+            ->paginate(10);
+        return OrderResource::collection($orders);
+    }
 }

@@ -9,12 +9,14 @@ Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
 
 Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
     Route::get('orders/dashboard', \App\Http\Controllers\OrderIndexController::class.'@indexDashboard'); //Ver ordenes para el dashboard
+    Route::get('orders', \App\Http\Controllers\OrderIndexController::class.'@index'); //Ver ordenes para el backoffice
     Route::post('orders/assign-collector', \App\Http\Controllers\OrderAssignedStoreController::class); //Asignar recolector
     Route::post('orders/init', \App\Http\Controllers\OrderInitStoreController::class); // Iniciar ordenes
 });
 
+
+
 Route::middleware('auth.jwt')->group(function () {
-    Route::get('orders', \App\Http\Controllers\OrderIndexController::class);
     Route::post('orders', \App\Http\Controllers\OrderStoreController::class);
     Route::get('orders/{order}', \App\Http\Controllers\OrderShowController::class);
     Route::put('orders/{order}', \App\Http\Controllers\OrderUpdateController::class);
