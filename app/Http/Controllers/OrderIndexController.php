@@ -32,10 +32,16 @@ class OrderIndexController extends Controller
         return OrderResource::collection($orders);
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $orderService = new OrderService();
+
         $orders = Order::orderBy('id', 'DESC')
             ->paginate(10);
+        $token = $request->bearerToken();
+        foreach ($orders as $order) {
+            $orderService->enrichOrder($order, $token);
+        }
         return OrderResource::collection($orders);
     }
 }
