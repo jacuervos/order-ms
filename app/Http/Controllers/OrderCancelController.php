@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\OrderInitStoreRequest;
+use App\Http\Requests\OrderCancelStoreRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderTypeWaste;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class OrderCancelController extends Controller
 {
-    public function __invoke(OrderInitStoreRequest $request)
+    public function __invoke(OrderCancelStoreRequest $request)
     {
         DB::beginTransaction();
 
