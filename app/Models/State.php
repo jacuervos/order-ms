@@ -18,6 +18,8 @@ class State extends Model
     const PICKED_UP = 'Recogido';
     const ORDER_COMPLETED = 'Orden finalizada';
 
+    const CANCEL = 'Cancelada';
+
     public function orders(){
         return $this->hasMany(Order::class);
     }

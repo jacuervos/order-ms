@@ -18,6 +18,7 @@ class OrderTypeWasteResource extends JsonResource
             'id' => $this->id,
             'name' => $this->type_waste,
             'weight' => (float) $this->weight,
+            'points' => (float) $this->points,
         ];
     }
 }

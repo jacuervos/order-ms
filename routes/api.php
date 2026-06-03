@@ -12,6 +12,7 @@ Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
     Route::get('orders', \App\Http\Controllers\OrderIndexController::class.'@index'); //Ver ordenes para el backoffice
     Route::post('orders/assign-collector', \App\Http\Controllers\OrderAssignedStoreController::class); //Asignar recolector
     Route::post('orders/init', \App\Http\Controllers\OrderInitStoreController::class); // Iniciar ordenes
+    Route::post('orders/cancel', \App\Http\Controllers\OrderCancelController::class); // Cancelar orden
 });
 
 Route::middleware('auth.jwt')->group(function () {
