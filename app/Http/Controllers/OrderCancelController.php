@@ -28,7 +28,7 @@ class OrderCancelController extends Controller
                     'state_id' => $stateId,
                 ]);
 
-            $order = Order::where('id', $validated['order_id'])->get();
+            $order = Order::findOrFail($validated['order_id']);
 
             OrderTypeWaste::where('order_id', $validated['order_id'])
                 ->update([
@@ -43,7 +43,7 @@ class OrderCancelController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Órdenes cancelada correctamente',
-                'data'    => OrderResource::collection($order),
+                'data'    => new OrderResource($order),
             ], 200);
 
         } catch (\Exception $e) {
