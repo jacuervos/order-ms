@@ -28,7 +28,7 @@ class OrderCancelController extends Controller
                     'state_id' => $stateId,
                 ]);
 
-            $orders = Order::where('id', $validated['order_id'])->get();
+            $order = Order::where('id', $validated['order_id'])->get();
 
             OrderTypeWaste::where('order_id', $validated['order_id'])
                 ->update([
@@ -38,14 +38,12 @@ class OrderCancelController extends Controller
 
             $token = $request->bearerToken();
 
-            $orders = $orders->map(function ($order) use ($orderService, $token) {
-                return $orderService->enrichOrder($order, $token);
-            });
+            $order = $orderService->enrichOrder($order, $token);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Órdenes cancelada correctamente',
-                'data'    => OrderResource::collection($orders),
+                'data'    => OrderResource::collection($order),
             ], 200);
 
         } catch (\Exception $e) {
