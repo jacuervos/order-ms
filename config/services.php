@@ -39,6 +39,10 @@ return [
         'url' => env('USER_URL'),
     ],
 
+    'collector_service' => [
+        'url' => env('COLLECTOR_URL'),
+    ],
+
     'waste_service' => [
         'url' => env('WASTE_URL'),
     ],

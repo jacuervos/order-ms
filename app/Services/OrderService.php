@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CollectorOrder;
 use App\Models\Order;
 use Illuminate\Support\Facades\Http;
 
@@ -21,6 +22,16 @@ class OrderService
             ->get("/user/{$order->user_id}");
 
         $order->user = $userResponse->json('data');
+
+        $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
+
+        if ($collectorOrder) {
+            $collectorResponse = Http::baseUrl(config('services.collector_service.url'))
+                ->withToken($token)
+                ->get("/collector/{$collectorOrder->collector_id}");
+
+            $order->collector = $collectorResponse->json('data');
+        }
 
         $order->orderTypeWastes->transform(function ($waste) use ($typeWastes) {
             $waste->type_waste = $typeWastes[$waste->type_waste_id]['name'] ?? null;

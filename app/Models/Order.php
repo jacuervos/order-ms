@@ -23,4 +23,9 @@ class Order extends Model
     {
         return $this->belongsTo(State::class);
     }
+
+    public function collectorOrder()
+    {
+        return $this->hasOne(CollectorOrder::class, 'order_id');
+    }
 }

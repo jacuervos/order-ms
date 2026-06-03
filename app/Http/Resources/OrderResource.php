@@ -20,6 +20,7 @@ class OrderResource extends JsonResource
             'longitude' => $this->longitude,
             'date' => $this->date,
             'user' => $this->user ?? null,
+            'collector' => $this->collector ?? null,
             'type_waste' => OrderTypeWasteResource::collection($this->orderTypeWastes),
             'state' => [
                 'id' => $this->state->id,
