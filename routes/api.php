@@ -5,6 +5,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
     Route::post('orders/with-wastes', \App\Http\Controllers\OrderWithWastesStoreController::class); //crear orden desde usuario
+    Route::get('orders/my-orders', \App\Http\Controllers\OrderByUserController::class); //Ver mis órdenes como usuario
+});
+
+Route::middleware(['auth.jwt', 'role:'.Rol::RECYCLER])->group(function () {
+    Route::get('orders/my-collections', \App\Http\Controllers\OrderByCollectorController::class); //Ver órdenes asignadas al recolector
 });
 
 Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
