@@ -18,6 +18,7 @@ Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
     Route::post('orders/assign-collector', \App\Http\Controllers\OrderAssignedStoreController::class); //Asignar recolector
     Route::post('orders/init', \App\Http\Controllers\OrderInitStoreController::class); // Iniciar ordenes
     Route::post('orders/cancel', \App\Http\Controllers\OrderCancelController::class); // Cancelar orden
+    Route::post('orders/finish', \App\Http\Controllers\OrderFinishController::class); // Finalizar orden
 });
 
 Route::middleware('auth.jwt')->group(function () {
