@@ -51,7 +51,7 @@ class OrderFinishController extends Controller
 
             Http::baseUrl(config('services.user_service.url'))
                 ->withToken($token)
-                ->get("/user-points/{$validated['user_id']}", [
+                ->patch("/user-points/{$validated['user_id']}", [
                     'points' => $totalPoints,
                 ]);
 
