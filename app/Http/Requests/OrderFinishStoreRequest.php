@@ -17,6 +17,7 @@ class OrderFinishStoreRequest extends FormRequest
     {
         return [
             'order_id'              => 'required|numeric',
+            'user_id'              => 'required|numeric',
             'items'                 => 'required|array|min:1',
             'items.*.type_waste_id' => 'required|integer',
             'items.*.weight'        => 'required|numeric|min:0',

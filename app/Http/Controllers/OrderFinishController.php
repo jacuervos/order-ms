@@ -9,6 +9,7 @@ use App\Models\OrderTypeWaste;
 use App\Models\State;
 use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class OrderFinishController extends Controller
 {
@@ -44,6 +45,15 @@ class OrderFinishController extends Controller
             $token = $request->bearerToken();
 
             $order = $orderService->enrichOrder($order, $token);
+
+            $totalPoints = collect($validated['items'])
+                ->sum('points');
+
+            Http::baseUrl(config('services.user_service.url'))
+                ->withToken($token)
+                ->get("/user-points/{$validated['user_id']}", [
+                    'points' => $totalPoints,
+                ]);
 
             return response()->json([
                 'success' => true,
