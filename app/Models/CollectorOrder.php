@@ -11,6 +11,11 @@ class CollectorOrder extends Model
         'order_id',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class, 'order_id');

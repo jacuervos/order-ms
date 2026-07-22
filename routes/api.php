@@ -6,10 +6,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
     Route::post('orders/with-wastes', \App\Http\Controllers\OrderWithWastesStoreController::class); //crear orden desde usuario
     Route::get('orders/my-orders', \App\Http\Controllers\OrderByUserController::class); //Ver mis órdenes como usuario
+    Route::get('collector/location', \App\Http\Controllers\UserOrderTrackingController::class.'@getMyCollectorLocation'); //HU-18: Obtener ubicación del recolector
+    Route::get('orders/active', \App\Http\Controllers\UserOrderTrackingController::class.'@getActiveOrders'); //Obtener órdenes activas con ubicación
 });
 
 Route::middleware(['auth.jwt', 'role:'.Rol::RECYCLER])->group(function () {
     Route::get('orders/my-collections', \App\Http\Controllers\OrderByCollectorController::class); //Ver órdenes asignadas al recolector
+    Route::get('pickup-points', \App\Http\Controllers\CollectorPickupPointsController::class.'@getMyAssignedPickupPoints'); //HU-19: Obtener puntos de recogida asignados
+    Route::patch('pickup-points/{pickupPoint}/complete', \App\Http\Controllers\CollectorPickupPointsController::class.'@completePickupPoint'); //Marcar punto como completado
+    Route::get('orders/{order}/details', \App\Http\Controllers\CollectorPickupPointsController::class.'@getOrderDetails'); //Detalles de orden con puntos de recogida
 });
 
 Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
