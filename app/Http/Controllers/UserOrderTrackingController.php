@@ -129,7 +129,7 @@ class UserOrderTrackingController extends Controller
 
             $orders = Order::where('user_id', $userId)
                 ->whereNull('completed_at')
-                ->with(['collectorOrder', 'state', 'pickupPoints'])
+                ->with(['collectorOrder', 'state'])
                 ->get()
                 ->map(function ($order) use ($token) {
                     $collectorLocation = null;

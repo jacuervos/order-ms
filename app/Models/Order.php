@@ -29,9 +29,4 @@ class Order extends Model
     {
         return $this->hasOne(CollectorOrder::class, 'order_id');
     }
-
-    public function pickupPoints()
-    {
-        return $this->hasMany(PickupPoint::class, 'order_id');
-    }
 }

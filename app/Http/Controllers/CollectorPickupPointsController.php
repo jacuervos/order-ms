@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\PickupPoint;
 use App\Services\AuthMicroserviceService;
 use Illuminate\Http\JsonResponse;
 
@@ -30,9 +29,7 @@ class CollectorPickupPointsController extends Controller
                     'message' => 'Token no proporcionado',
                 ], 401);
             }
-
             $collectorData = $this->authService->getAuthenticatedCollector($token);
-
             if (!$collectorData) {
                 return response()->json([
                     'success' => false,
@@ -40,35 +37,20 @@ class CollectorPickupPointsController extends Controller
                 ], 403);
             }
 
-            $collectorId = $collectorData['id'];
+            $collectorId = $collectorData['collector']['id'];
 
             // Obtener las órdenes activas asignadas al recolector a través de collector_orders
             $orders = Order::whereHas('collectorOrder', function ($query) use ($collectorId) {
                 $query->where('collector_id', $collectorId);
-            })
-                ->whereNull('completed_at')
-                ->with('pickupPoints')
-                ->get();
+            })->get();
 
-            // Compilar todos los puntos de recogida
-            $pickupPoints = PickupPoint::whereIn('order_id', $orders->pluck('id'))
-                ->where(function ($query) {
-                    $query->whereNull('completed_at')
-                        ->orWhere('completed_at', '>', now()->subHours(24));
-                })
-                ->with('order')
-                ->get()
-                ->map(fn($point) => [
-                    'id' => $point->id,
-                    'order_id' => $point->order_id,
-                    'latitude' => $point->latitude,
-                    'longitude' => $point->longitude,
-                    'address' => $point->address,
-                    'notes' => $point->notes,
-                    'completed_at' => $point->completed_at,
-                    'user_name' => $collectorData['user_name'] ?? 'Usuario',
-                    'user_phone' => $collectorData['user_phone'] ?? null,
-                ]);
+            // Compilar todos los puntos de recogida desde las órdenes
+            $pickupPoints = $orders->map(fn($order) => [
+                'id' => $order->id,
+                'order_id' => $order->id,
+                'latitude' => $order->latitude,
+                'longitude' => $order->longitude
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -88,9 +70,9 @@ class CollectorPickupPointsController extends Controller
     }
 
     /**
-     * Marcar un punto de recogida como completado
+     * Marcar una orden como completada
      */
-    public function completePickupPoint(PickupPoint $pickupPoint): JsonResponse
+    public function completePickupPoint(Order $order): JsonResponse
     {
         try {
             $token = request()->bearerToken();
@@ -111,31 +93,28 @@ class CollectorPickupPointsController extends Controller
                 ], 403);
             }
 
-            $collectorId = $collectorData['id'];
+            $collectorId = $collectorData['collector']['id'];
 
-            // Verificar que el punto pertenece a una orden del recolector
-            $order = $pickupPoint->order;
+            // Verificar que la orden pertenece al recolector
             $isAssigned = $order->collectorOrder()->where('collector_id', $collectorId)->exists();
 
             if (!$isAssigned) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Este punto no está asignado a tu recolección',
+                    'message' => 'Esta orden no está asignada a tu recolección',
                 ], 403);
             }
 
-            $pickupPoint->update(['completed_at' => now()]);
-
             return response()->json([
                 'success' => true,
-                'message' => 'Punto de recogida marcado como completado',
-                'data' => $pickupPoint,
+                'message' => 'Orden marcada como completada',
+                'data' => $order,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al marcar el punto como completado',
+                'message' => 'Error al marcar la orden como completada',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -165,7 +144,7 @@ class CollectorPickupPointsController extends Controller
                 ], 403);
             }
 
-            $collectorId = $collectorData['id'];
+            $collectorId = $collectorData['collector']['id'];
 
             // Verificar que la orden está asignada al recolector
             $isAssigned = $order->collectorOrder()->where('collector_id', $collectorId)->exists();
@@ -186,16 +165,11 @@ class CollectorPickupPointsController extends Controller
                         'user_phone' => $collectorData['user_phone'] ?? null,
                         'scheduled_date' => $order->date,
                         'status' => $order->state->name ?? 'pending',
+                        'latitude' => $order->latitude,
+                        'longitude' => $order->longitude,
+                        'address' => $order->address ?? 'Sin dirección',
+                        'notes' => $order->notes ?? null,
                     ],
-                    'pickup_points' => $order->pickupPoints
-                        ->map(fn($point) => [
-                            'id' => $point->id,
-                            'latitude' => $point->latitude,
-                            'longitude' => $point->longitude,
-                            'address' => $point->address,
-                            'notes' => $point->notes,
-                            'completed_at' => $point->completed_at,
-                        ]),
                 ],
             ], 200);
 

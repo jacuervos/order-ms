@@ -23,8 +23,7 @@ class AuthMicroserviceService
         try {
             $response = Http::withToken($token)
                 ->timeout(10)
-                ->get("{$this->baseUrl}/api/collector/me");
-
+                ->get("{$this->baseUrl}/auth_me");
             if ($response->successful()) {
                 return $response->json('data');
             }
