@@ -12,6 +12,7 @@ class Order extends Model
         'longitude',
         'date',
         'state_id',
+        'service_started_at',
     ];
 
     public function orderTypeWastes()
