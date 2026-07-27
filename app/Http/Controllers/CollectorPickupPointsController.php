@@ -48,8 +48,8 @@ class CollectorPickupPointsController extends Controller
             $pickupPoints = $orders->map(fn($order) => [
                 'id' => $order->id,
                 'order_id' => $order->id,
-                'latitude' => $order->latitude,
-                'longitude' => $order->longitude
+                'latitude' => (float) $order->latitude,
+                'longitude' => (float) $order->longitude
             ]);
 
             return response()->json([
@@ -165,8 +165,8 @@ class CollectorPickupPointsController extends Controller
                         'user_phone' => $collectorData['user_phone'] ?? null,
                         'scheduled_date' => $order->date,
                         'status' => $order->state->name ?? 'pending',
-                        'latitude' => $order->latitude,
-                        'longitude' => $order->longitude,
+                        'latitude' => (float) $order->latitude,
+                        'longitude' => (float) $order->longitude,
                         'address' => $order->address ?? 'Sin dirección',
                         'notes' => $order->notes ?? null,
                     ],
