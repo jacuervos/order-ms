@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\State;
 use App\Services\AuthMicroserviceService;
 use Illuminate\Http\JsonResponse;
 
@@ -40,9 +41,14 @@ class CollectorPickupPointsController extends Controller
             $collectorId = $collectorData['collector']['id'];
 
             // Obtener las órdenes activas asignadas al recolector a través de collector_orders
+            // Filtrar solo órdenes con estado SERVICE_START (Inicio de servicio)
             $orders = Order::whereHas('collectorOrder', function ($query) use ($collectorId) {
                 $query->where('collector_id', $collectorId);
-            })->get();
+            })
+            ->whereHas('state', function ($query) {
+                $query->where('name', State::SERVICE_START);
+            })
+            ->get();
 
             // Compilar todos los puntos de recogida desde las órdenes
             $pickupPoints = $orders->map(fn($order) => [
