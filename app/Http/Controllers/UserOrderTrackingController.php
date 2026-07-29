@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\CollectorLocation;
+use App\Models\State;
 use App\Services\AuthMicroserviceService;
 use Illuminate\Http\JsonResponse;
 
@@ -128,7 +129,9 @@ class UserOrderTrackingController extends Controller
             }
 
             $orders = Order::where('user_id', $userId)
-                ->whereNull('completed_at')
+                ->whereHas('state', function ($query) {
+                    $query->where('name', State::SERVICE_START);
+                })
                 ->with(['collectorOrder', 'state'])
                 ->get()
                 ->map(function ($order) use ($token) {
