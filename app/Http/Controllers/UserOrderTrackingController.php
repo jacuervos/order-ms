@@ -7,6 +7,7 @@ use App\Models\CollectorLocation;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 
 class UserOrderTrackingController extends Controller
 {
@@ -128,18 +129,30 @@ class UserOrderTrackingController extends Controller
                 ], 401);
             }
 
+            $typeWasteResponse = Http::baseUrl(config('services.waste_service.url'))
+                ->withToken($token)
+                ->get('/type-wastes');
+
+            $typeWastes = collect($typeWasteResponse->json('data'))
+                ->keyBy('id');
+
             $orders = Order::where('user_id', $userId)
                 ->whereHas('state', function ($query) {
                     $query->where('name', State::SERVICE_START);
                 })
-                ->with(['collectorOrder', 'state'])
+                ->with([
+                    'collectorOrder',
+                    'state',
+                    'orderTypeWastes',
+                ])
                 ->get()
-                ->map(function ($order) use ($token) {
+                ->map(function ($order) use ($token, $typeWastes) {
                     $collectorLocation = null;
                     $collectorName = null;
 
                     if ($order->collectorOrder) {
                         $collectorId = $order->collectorOrder->collector_id;
+
                         $collectorLocation = CollectorLocation::where('collector_id', $collectorId)
                             ->latest('updated_at')
                             ->first();
@@ -168,6 +181,15 @@ class UserOrderTrackingController extends Controller
                             'longitude' => $order->longitude,
                         ],
                         'status' => $order->state->name ?? 'pending',
+                        'items' => $order->orderTypeWastes->map(function ($item) use ($typeWastes) {
+                            $typeWaste = $typeWastes->get($item->type_waste_id);
+
+                            return [
+                                'type_waste_name' => $typeWaste['name'] ?? null,
+                                'weight' => $item->weight,
+                                'points' => $item->points,
+                            ];
+                        })->values(),
                     ];
                 });
 
