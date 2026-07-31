@@ -8,10 +8,12 @@ use Exception;
 class AuthMicroserviceService
 {
     private string $baseUrl;
+    private string $baseUrlUser;
 
     public function __construct()
     {
         $this->baseUrl = env('AUTH_MS_URL', 'http://ud-ms-auth:8000');
+        $this->baseUrlUser = env('USER_URL', 'http://ud-ms-auth:8000');
     }
 
     /**
@@ -43,7 +45,7 @@ class AuthMicroserviceService
         try {
             $response = Http::withToken($token)
                 ->timeout(10)
-                ->get("{$this->baseUrl}/api/users/{$userId}");
+                ->get("{$this->baseUrlUser}/user/{$userId}");
 
             if ($response->successful()) {
                 return $response->json('data');
