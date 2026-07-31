@@ -50,13 +50,30 @@ class CollectorPickupPointsController extends Controller
             })
             ->get();
 
-            // Compilar todos los puntos de recogida desde las órdenes
-            $pickupPoints = $orders->map(fn($order) => [
-                'id' => $order->id,
-                'order_id' => $order->id,
-                'latitude' => (float) $order->latitude,
-                'longitude' => (float) $order->longitude
-            ]);
+            // Compilar todos los puntos de recogida desde las órdenes con datos del usuario
+            $pickupPoints = $orders->map(function ($order) use ($token) {
+                $userData = null;
+
+                try {
+                    if ($order->user_id) {
+                        $userData = $this->authService->getUserById((int) $order->user_id, $token);
+                    }
+                } catch (\Exception $e) {
+                    $userData = null;
+                }
+
+                return [
+                    'id' => $order->id,
+                    'order_id' => $order->id,
+                    'latitude' => (float) $order->latitude,
+                    'longitude' => (float) $order->longitude,
+                    'address' => $order->address ?? null,
+                    'notes' => $order->notes ?? null,
+                    'completed_at' => $order->completed_at,
+                    'user_name' => $userData['name'] ?? $userData['user_name'] ?? 'Usuario',
+                    'user_phone' => $userData['phone'] ?? $userData['phone_number'] ?? null,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
