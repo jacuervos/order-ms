@@ -69,7 +69,6 @@ class CollectorPickupPointsController extends Controller
                     'longitude' => (float) $order->longitude,
                     'address' => $order->address ?? null,
                     'notes' => $order->notes ?? null,
-                    'completed_at' => $order->completed_at,
                     'user_name' => $userData['name'] ?? $userData['user_name'] ?? 'Usuario',
                     'user_phone' => $userData['phone'] ?? $userData['phone_number'] ?? null,
                 ];
@@ -138,7 +137,6 @@ class CollectorPickupPointsController extends Controller
             }
 
             $order->state_id = $completedState->id;
-            $order->completed_at = now();
             $order->save();
 
             return response()->json([

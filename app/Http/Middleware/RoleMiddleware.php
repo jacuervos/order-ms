@@ -24,7 +24,6 @@ class RoleMiddleware
             if (!in_array($userRole, $roles)) {
                 return response()->json(['error' => 'No Tiene Permisos Para Seguir'], Response::HTTP_FORBIDDEN);
             }
-
             // Guardar el rol en la request
             $request->attributes->set('user_role', $userRole);
 
