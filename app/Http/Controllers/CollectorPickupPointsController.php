@@ -128,6 +128,19 @@ class CollectorPickupPointsController extends Controller
                 ], 403);
             }
 
+            $completedState = State::where('name', State::ORDER_COMPLETED)->first();
+
+            if (!$completedState) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró el estado de orden finalizada',
+                ], 500);
+            }
+
+            $order->state_id = $completedState->id;
+            $order->completed_at = now();
+            $order->save();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orden marcada como completada',
