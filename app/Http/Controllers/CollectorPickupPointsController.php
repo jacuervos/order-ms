@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderTypeWaste;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class CollectorPickupPointsController extends Controller
 {
@@ -231,8 +234,22 @@ class CollectorPickupPointsController extends Controller
                 ], 500);
             }
 
+            DB::beginTransaction();
+
+            $totalPoints = OrderTypeWaste::where('order_id', $order->id)
+                ->sum('points');
+
             $order->state_id = $completedState->id;
             $order->save();
+
+            Http::baseUrl(config('services.user_service.url'))
+                ->withToken($token)
+                ->patch("/user-points/{$order->user_id}", [
+                    'points' => $totalPoints,
+                ])
+                ->throw();
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -241,6 +258,8 @@ class CollectorPickupPointsController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al marcar la orden como completada',
