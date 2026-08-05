@@ -46,8 +46,12 @@ class CollectorPickupPointsController extends Controller
                 $query->where('collector_id', $collectorId);
             })
             ->whereHas('state', function ($query) {
-                $query->where('name', State::SERVICE_START);
+                $query->whereIn('name', [
+                    State::SERVICE_START,
+                    State::PICKED_UP,
+                ]);
             })
+            ->with('state')
             ->get();
 
             // Compilar todos los puntos de recogida desde las órdenes con datos del usuario
@@ -69,6 +73,9 @@ class CollectorPickupPointsController extends Controller
                     'longitude' => (float) $order->longitude,
                     'address' => $order->address ?? null,
                     'notes' => $order->notes ?? null,
+                    'completed_at' => null,
+                    'state_name' => $order->state->name ?? null,
+                    'is_picked_up' => ($order->state->name ?? null) === State::PICKED_UP,
                     'user_name' => $userData['name'] ?? $userData['user_name'] ?? 'Usuario',
                     'user_phone' => $userData['phone'] ?? $userData['phone_number'] ?? null,
                 ];
@@ -86,6 +93,85 @@ class CollectorPickupPointsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener los puntos de recogida',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Marcar una orden como recogida
+     */
+    public function markPickupPointAsPicked(Order $order): JsonResponse
+    {
+        try {
+            $token = request()->bearerToken();
+
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token no proporcionado',
+                ], 401);
+            }
+
+            $collectorData = $this->authService->getAuthenticatedCollector($token);
+
+            if (!$collectorData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El usuario no es un recolector',
+                ], 403);
+            }
+
+            $collectorId = $collectorData['collector']['id'];
+
+            $isAssigned = $order->collectorOrder()->where('collector_id', $collectorId)->exists();
+
+            if (!$isAssigned) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta orden no está asignada a tu recolección',
+                ], 403);
+            }
+
+            $currentStateName = optional($order->state)->name;
+
+            if ($currentStateName === State::PICKED_UP) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'La orden ya está marcada como recogida',
+                    'data' => $order,
+                ], 200);
+            }
+
+            if ($currentStateName !== State::SERVICE_START) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La orden debe estar en Inicio de servicio para marcarla como recogida',
+                ], 400);
+            }
+
+            $pickedUpState = State::where('name', State::PICKED_UP)->first();
+
+            if (!$pickedUpState) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró el estado de recogida',
+                ], 500);
+            }
+
+            $order->state_id = $pickedUpState->id;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Orden marcada como recogida',
+                'data' => $order,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al marcar la orden como recogida',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -125,6 +211,15 @@ class CollectorPickupPointsController extends Controller
                     'success' => false,
                     'message' => 'Esta orden no está asignada a tu recolección',
                 ], 403);
+            }
+
+            $currentStateName = optional($order->state)->name;
+
+            if ($currentStateName !== State::PICKED_UP) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Primero debes marcar la orden como recogida',
+                ], 400);
             }
 
             $completedState = State::where('name', State::ORDER_COMPLETED)->first();

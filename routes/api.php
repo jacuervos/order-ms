@@ -14,6 +14,7 @@ Route::middleware(['auth.jwt', 'role:'.Rol::RECYCLER])->group(function () {
     Route::get('orders/my-collections', \App\Http\Controllers\OrderByCollectorController::class); //Ver órdenes asignadas al recolector
     Route::post('orders/{order}/accept', \App\Http\Controllers\CollectorAcceptOrderController::class); //Aceptar orden e iniciar servicio
     Route::get('pickup-points', \App\Http\Controllers\CollectorPickupPointsController::class.'@getMyAssignedPickupPoints'); //HU-19: Obtener puntos de recogida asignados
+    Route::put('orders/{order}/picked-up', \App\Http\Controllers\CollectorPickupPointsController::class.'@markPickupPointAsPicked'); //Marcar orden como recogida
     Route::put('orders/{order}/complete', \App\Http\Controllers\CollectorPickupPointsController::class.'@completePickupPoint'); //Marcar orden como completada
     Route::get('orders/{order}/details', \App\Http\Controllers\CollectorPickupPointsController::class.'@getOrderDetails'); //Detalles de orden
     Route::post('collector/location', \App\Http\Controllers\UpdateCollectorLocationController::class); //HU-18: Actualizar ubicación del recolector
