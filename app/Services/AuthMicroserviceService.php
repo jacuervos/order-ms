@@ -9,11 +9,13 @@ class AuthMicroserviceService
 {
     private string $baseUrl;
     private string $baseUrlUser;
+    private string $baseUrlCollector;
 
     public function __construct()
     {
         $this->baseUrl = env('AUTH_MS_URL', 'http://ud-ms-auth:8000');
         $this->baseUrlUser = env('USER_URL', 'http://ud-ms-auth:8000');
+        $this->baseUrlCollector = env('COLLECTOR_URL', 'http://ud-ms-auth:8000');
     }
 
     /**
@@ -67,6 +69,52 @@ class AuthMicroserviceService
             $response = Http::withToken($token)
                 ->timeout(10)
                 ->get("{$this->baseUrl}/api/collectors/{$collectorId}");
+
+            if ($response->successful()) {
+                return $response->json('data');
+            }
+
+            return null;
+        } catch (Exception $e) {
+            throw new Exception("Error obteniendo collector: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Obtener nombre del usuario
+     * @throws Exception
+     */
+    public function getUserByName(array $ids, string $token): ?array
+    {
+        try {
+            $response = Http::withToken($token)
+                ->timeout(100)
+                ->post("{$this->baseUrlUser}/users_by_name", [
+                    'ids' => $ids,
+                ]);
+
+            if ($response->successful()) {
+                return $response->json('data');
+            }
+
+            return null;
+        } catch (Exception $e) {
+            throw new Exception("Error obteniendo collector: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Obtener nombre del usuario
+     * @throws Exception
+     */
+    public function getIdUserByCollector(array $ids, string $token): ?array
+    {
+        try {
+            $response = Http::withToken($token)
+                ->timeout(100)
+                ->post("{$this->baseUrlCollector}/users_by_id", [
+                    'ids' => $ids,
+                ]);
 
             if ($response->successful()) {
                 return $response->json('data');

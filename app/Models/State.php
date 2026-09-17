@@ -20,6 +20,8 @@ class State extends Model
 
     const CANCEL = 'Cancelada';
 
+    const RESCHEDULED = 'Reprogramada';
+
     public function orders(){
         return $this->hasMany(Order::class);
     }

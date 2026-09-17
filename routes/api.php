@@ -27,6 +27,10 @@ Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
     Route::post('orders/init', \App\Http\Controllers\OrderInitStoreController::class); // Iniciar ordenes
     Route::post('orders/cancel', \App\Http\Controllers\OrderCancelController::class); // Cancelar orden
     Route::post('orders/finish', \App\Http\Controllers\OrderFinishController::class); // Finalizar orden
+    Route::get('all_orders', \App\Http\Controllers\DashboardsController::class.'@allOrders'); //Ver órdenes para el dashboard
+    Route::get('total_users', \App\Http\Controllers\DashboardsController::class.'@listTotalUsers'); //Ver total de usuarios por ordenes
+    Route::get('last_date_users', \App\Http\Controllers\DashboardsController::class.'@listDateUsers'); //Ver últimas ordenes por usuario
+    Route::get('total_collectors', \App\Http\Controllers\DashboardsController::class.'@listTopCollectors'); //Ver total de recolectores por ordenes
 });
 
 Route::middleware('auth.jwt')->group(function () {
