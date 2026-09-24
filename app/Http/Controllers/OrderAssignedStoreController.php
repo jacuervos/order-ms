@@ -46,7 +46,14 @@ class OrderAssignedStoreController extends Controller
             if ($token) {
                 try {
                     $collectorData = $authService->getCollectorById((int) $validated['collector_id'], $token);
-                    $collectorToken = $this->resolvePushToken($collectorData);
+                    $userId = data_get($collectorData, 'user_id') ?? data_get($collectorData, 'user.id') ?? data_get($collectorData, 'id_user');
+
+                    $userData = null;
+                    if ($userId !== null && $userId !== '') {
+                        $userData = $authService->getUserById((int) $userId, $token);
+                    }
+
+                    $collectorToken = $this->resolvePushToken($collectorData, $userData);
 
                     if ($collectorToken) {
                         $pushNotificationService->sendToToken(
@@ -87,26 +94,20 @@ class OrderAssignedStoreController extends Controller
         }
     }
 
-    private function resolvePushToken(mixed $collectorData): ?string
+    private function resolvePushToken(mixed $collectorData, ?array $userData = null): ?string
     {
-        foreach ([
-            'firebase_token',
-            'push_token',
-            'fcm_token',
-            'device_token',
-            'notification_token',
-            'user.firebase_token',
-            'user.push_token',
-            'user.fcm_token',
-            'user.device_token',
-            'collector.firebase_token',
-            'collector.push_token',
-            'collector.fcm_token',
-            'collector.device_token',
-        ] as $path) {
+        foreach (['firebase_token', 'user.firebase_token', 'collector.firebase_token'] as $path) {
             $token = data_get($collectorData, $path);
 
-            if (is_string($token) && $token !== '') {
+            if (is_string($token) && trim($token) !== '') {
+                return $token;
+            }
+        }
+
+        if ($userData !== null) {
+            $token = data_get($userData, 'firebase_token');
+
+            if (is_string($token) && trim($token) !== '') {
                 return $token;
             }
         }

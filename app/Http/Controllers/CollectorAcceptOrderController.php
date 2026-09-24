@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CollectorAcceptOrderController extends Controller
 {
     private AuthMicroserviceService $authService;
+    private PushNotificationService $pushNotificationService;
 
-    public function __construct(AuthMicroserviceService $authService)
+    public function __construct(AuthMicroserviceService $authService, PushNotificationService $pushNotificationService)
     {
         $this->authService = $authService;
+        $this->pushNotificationService = $pushNotificationService;
     }
 
     /**
@@ -79,6 +83,40 @@ class CollectorAcceptOrderController extends Controller
 
             DB::commit();
 
+            try {
+                $userId = data_get($collectorData, 'user_id')
+                    ?? data_get($collectorData, 'user.id')
+                    ?? data_get($collectorData, 'id_user');
+
+                $userData = null;
+
+                if ($userId !== null && $userId !== '') {
+                    $userData = $this->authService->getUserById((int) $userId, $token);
+                }
+
+                $collectorToken = $this->resolvePushToken($collectorData, $userData);
+
+                if ($collectorToken) {
+                    $this->pushNotificationService->sendToToken(
+                        $collectorToken,
+                        'Orden aceptada',
+                        'El recolector aceptó la orden #' . $order->id,
+                        [
+                            'type' => 'order_accepted',
+                            'order_id' => (string) $order->id,
+                            'collector_id' => (string) $collectorId,
+                            'state' => (string) $serviceStartState->id,
+                        ]
+                    );
+                }
+            } catch (\Throwable $pushException) {
+                Log::warning('La orden se aceptó, pero falló la notificación push al recolector', [
+                    'collector_id' => $collectorId,
+                    'order_id' => $order->id,
+                    'error' => $pushException->getMessage(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orden aceptada. Iniciando servicio',
@@ -98,5 +136,26 @@ class CollectorAcceptOrderController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function resolvePushToken(mixed $collectorData, ?array $userData = null): ?string
+    {
+        foreach (['firebase_token', 'user.firebase_token', 'collector.firebase_token'] as $path) {
+            $token = data_get($collectorData, $path);
+
+            if (is_string($token) && trim($token) !== '') {
+                return $token;
+            }
+        }
+
+        if ($userData !== null) {
+            $token = data_get($userData, 'firebase_token');
+
+            if (is_string($token) && trim($token) !== '') {
+                return $token;
+            }
+        }
+
+        return null;
     }
 }
