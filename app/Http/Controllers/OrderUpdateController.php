@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CollectorOrder;
 use App\Models\Order;
 use App\Http\Requests\OrderUpdateRequest;
 use App\Models\State;
@@ -18,7 +19,11 @@ class OrderUpdateController extends Controller
     public function updateOrderUserReschedule(OrderUpdateRequest $request, Order $order)
     {
         $state = State::where('name', State::RESCHEDULED)->first();
+        $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
 
+        if ($collectorOrder) {
+            $collectorOrder->delete();
+        }
         $date = $request->date;
         $order->date = $date;
         $order->state_id = $state->id;
@@ -28,6 +33,11 @@ class OrderUpdateController extends Controller
 
     public function updateOrderReschedule(OrderUpdateRequest $request, Order $order)
     {
+        $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
+
+        if ($collectorOrder) {
+            $collectorOrder->delete();
+        }
         $date = $request->date;
         $order->date = $date;
         $order->update();
@@ -37,6 +47,11 @@ class OrderUpdateController extends Controller
     public function updateOrderRecolectorReschedule(Order $order)
     {
         $state = State::where('name', State::RESCHEDULED)->first();
+        $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
+
+        if ($collectorOrder) {
+            $collectorOrder->delete();
+        }
         $order->state_id = $state->id;
         $order->update();
         return response()->json($order);
