@@ -6,17 +6,21 @@ use App\Models\Order;
 use App\Models\OrderTypeWaste;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CollectorPickupPointsController extends Controller
 {
     private AuthMicroserviceService $authService;
+    private PushNotificationService $pushNotificationService;
 
-    public function __construct(AuthMicroserviceService $authService)
+    public function __construct(AuthMicroserviceService $authService, PushNotificationService $pushNotificationService)
     {
         $this->authService = $authService;
+        $this->pushNotificationService = $pushNotificationService;
     }
 
     /**
@@ -165,6 +169,31 @@ class CollectorPickupPointsController extends Controller
             $order->state_id = $pickedUpState->id;
             $order->save();
 
+            try {
+                $userData = $this->authService->getUserById((int) $order->user_id, $token);
+                $userToken = $this->resolvePushToken($userData);
+
+                if ($userToken) {
+                    $this->pushNotificationService->sendToToken(
+                        $userToken,
+                        'Recogida en curso',
+                        'Tu orden #' . $order->id . ' ya fue recogida por el recolector',
+                        [
+                            'type' => 'order_picked_up',
+                            'order_id' => (string) $order->id,
+                            'collector_id' => (string) $collectorId,
+                            'state' => (string) $pickedUpState->id,
+                        ]
+                    );
+                }
+            } catch (\Throwable $pushException) {
+                Log::warning('La orden fue marcada como recogida, pero falló la notificación push al usuario', [
+                    'order_id' => $order->id,
+                    'user_id' => $order->user_id,
+                    'error' => $pushException->getMessage(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orden marcada como recogida',
@@ -251,6 +280,31 @@ class CollectorPickupPointsController extends Controller
 
             DB::commit();
 
+            try {
+                $userData = $this->authService->getUserById((int) $order->user_id, $token);
+                $userToken = $this->resolvePushToken($userData);
+
+                if ($userToken) {
+                    $this->pushNotificationService->sendToToken(
+                        $userToken,
+                        'Orden completada',
+                        'Tu orden #' . $order->id . ' fue completada correctamente',
+                        [
+                            'type' => 'order_completed',
+                            'order_id' => (string) $order->id,
+                            'collector_id' => (string) $collectorId,
+                            'state' => (string) $completedState->id,
+                        ]
+                    );
+                }
+            } catch (\Throwable $pushException) {
+                Log::warning('La orden fue completada, pero falló la notificación push al usuario', [
+                    'order_id' => $order->id,
+                    'user_id' => $order->user_id,
+                    'error' => $pushException->getMessage(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orden marcada como completada',
@@ -328,5 +382,22 @@ class CollectorPickupPointsController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function resolvePushToken(?array $userData = null): ?string
+    {
+        if ($userData === null) {
+            return null;
+        }
+
+        foreach (['firebase_token', 'user.firebase_token'] as $path) {
+            $token = data_get($userData, $path);
+
+            if (is_string($token) && trim($token) !== '') {
+                return $token;
+            }
+        }
+
+        return null;
     }
 }
