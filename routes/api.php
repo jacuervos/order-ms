@@ -8,7 +8,7 @@ Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
     Route::get('orders/my-orders', \App\Http\Controllers\OrderByUserController::class); //Ver mis órdenes como usuario
     Route::get('collector/location', \App\Http\Controllers\UserOrderTrackingController::class.'@getMyCollectorLocation'); //HU-18: Obtener ubicación del recolector
     Route::get('orders/active', \App\Http\Controllers\UserOrderTrackingController::class.'@getActiveOrders'); //Obtener órdenes activas con ubicación
-    Route::get('orders/update-date-state', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderUserReschedule'); //Cambiar fecha y estado
+    Route::put('orders/update-date-state', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderUserReschedule'); //Cambiar fecha y estado
     Route::put('orders/update-date', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderReschedule'); //Cambiar fecha
     Route::get('orders/reschedule', \App\Http\Controllers\UserOrderTrackingController::class.'@getRescheduleOrders'); //Obtener órdenes reprogramadas
 });
