@@ -224,4 +224,55 @@ class UserOrderTrackingController extends Controller
             return null;
         }
     }
+
+    /**
+     * Obtener todas las órdenes reprogramadas del usuario
+     */
+    public function getRescheduleOrders(): JsonResponse
+    {
+        try {
+            $token = request()->bearerToken();
+
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token no proporcionado',
+                ], 401);
+            }
+
+            $userId = $this->getUserIdFromToken($token);
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo obtener el usuario',
+                ], 401);
+            }
+
+
+            $orders = Order::where('user_id', $userId)
+                ->whereHas('state', function ($query) {
+                    $query->where('id', State::RESCHEDULED);
+                })
+                ->get()
+                ->map(function ($order) {
+                    return [
+                        'id' => $order->id,
+                        'status' => $order->state->name ?? 'pending',
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las órdenes activas',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

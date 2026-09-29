@@ -8,6 +8,9 @@ Route::middleware(['auth.jwt', 'role:'.Rol::USER])->group(function () {
     Route::get('orders/my-orders', \App\Http\Controllers\OrderByUserController::class); //Ver mis órdenes como usuario
     Route::get('collector/location', \App\Http\Controllers\UserOrderTrackingController::class.'@getMyCollectorLocation'); //HU-18: Obtener ubicación del recolector
     Route::get('orders/active', \App\Http\Controllers\UserOrderTrackingController::class.'@getActiveOrders'); //Obtener órdenes activas con ubicación
+    Route::get('orders/update-date-state', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderUserReschedule'); //Cambiar fecha y estado
+    Route::get('orders/update-date', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderReschedule'); //Cambiar fecha
+    Route::get('orders/reschedule', \App\Http\Controllers\UserOrderTrackingController::class.'@getRescheduleOrders'); //Obtener órdenes reprogramadas
 });
 
 Route::middleware(['auth.jwt', 'role:'.Rol::RECYCLER])->group(function () {
@@ -18,6 +21,7 @@ Route::middleware(['auth.jwt', 'role:'.Rol::RECYCLER])->group(function () {
     Route::put('orders/{order}/complete', \App\Http\Controllers\CollectorPickupPointsController::class.'@completePickupPoint'); //Marcar orden como completada
     Route::get('orders/{order}/details', \App\Http\Controllers\CollectorPickupPointsController::class.'@getOrderDetails'); //Detalles de orden
     Route::post('collector/location', \App\Http\Controllers\UpdateCollectorLocationController::class); //HU-18: Actualizar ubicación del recolector
+    Route::get('orders/update-state', \App\Http\Controllers\OrderUpdateController::class.'@updateOrderRecolectorReschedule'); //Cambiar estado de orden
 });
 
 Route::middleware(['auth.jwt', 'role:'.Rol::ADMIN])->group(function () {
