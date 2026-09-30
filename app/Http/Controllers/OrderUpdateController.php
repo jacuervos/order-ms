@@ -6,9 +6,21 @@ use App\Models\CollectorOrder;
 use App\Models\Order;
 use App\Http\Requests\OrderUpdateRequest;
 use App\Models\State;
+use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
 
 class OrderUpdateController extends Controller
 {
+
+    private AuthMicroserviceService $authService;
+    private PushNotificationService $pushNotificationService;
+
+    public function __construct(AuthMicroserviceService $authService, PushNotificationService $pushNotificationService)
+    {
+        $this->authService = $authService;
+        $this->pushNotificationService = $pushNotificationService;
+    }
+
     public function __invoke(OrderUpdateRequest $request, Order $order)
     {
     $validated = $request->validated();
@@ -18,10 +30,28 @@ class OrderUpdateController extends Controller
 
     public function updateOrderUserReschedule(OrderUpdateRequest $request, Order $order)
     {
+        $token = request()->bearerToken();
         $state = State::where('name', State::RESCHEDULED)->first();
         $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
 
         if ($collectorOrder) {
+            $collectorData = $this->authService->getCollectorById((int) $collectorOrder->collector_id, $token);
+            $userId = data_get($collectorData, 'user_id') ?? data_get($collectorData, 'user.id') ?? data_get($collectorData, 'id_user');
+
+            $userData = null;
+            if ($userId !== null && $userId !== '') {
+                $userData = $this->authService->getUserById((int) $userId, $token);
+            }
+            $collectorToken = $this->resolvePushToken($collectorData, $userData);
+            $this->pushNotificationService->sendToToken(
+                $collectorToken,
+                'Órden reprogramada',
+                'La orden #' . $order->id . ' se reprogramo, ya  no debe dirigirse al sitio',
+                [
+                    'type' => 'reschedule_order',
+                    'order_id' => (string) $order->id,
+                ]
+            );
             $collectorOrder->delete();
         }
         $date = $request->date;
@@ -36,6 +66,23 @@ class OrderUpdateController extends Controller
         $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
 
         if ($collectorOrder) {
+            $collectorData = $this->authService->getCollectorById((int) $collectorOrder->collector_id, $token);
+            $userId = data_get($collectorData, 'user_id') ?? data_get($collectorData, 'user.id') ?? data_get($collectorData, 'id_user');
+
+            $userData = null;
+            if ($userId !== null && $userId !== '') {
+                $userData = $this->authService->getUserById((int) $userId, $token);
+            }
+            $collectorToken = $this->resolvePushToken($collectorData, $userData);
+            $this->pushNotificationService->sendToToken(
+                $collectorToken,
+                'Órden reprogramada',
+                'La orden #' . $order->id . ' se reprogramo, ya  no debe dirigirse al sitio',
+                [
+                    'type' => 'reschedule_order',
+                    'order_id' => (string) $order->id,
+                ]
+            );
             $collectorOrder->delete();
         }
         $date = $request->date;
@@ -46,10 +93,23 @@ class OrderUpdateController extends Controller
 
     public function updateOrderRecolectorReschedule(Order $order)
     {
+        $token = request()->bearerToken();
+
         $state = State::where('name', State::RESCHEDULED)->first();
         $collectorOrder = CollectorOrder::where('order_id', $order->id)->first();
 
         if ($collectorOrder) {
+            $userData = $this->authService->getUserById((int) $order->user_id, $token);
+            $userToken = $this->resolvePushToken($userData);
+            $this->pushNotificationService->sendToToken(
+                $userToken,
+                'Recogida en curso',
+                'Tu orden #' . $order->id . ' ha sido reprogramada',
+                [
+                    'type' => 'order_picked_up',
+                    'order_id' => (string) $order->id,
+                ]
+            );
             $collectorOrder->delete();
         }
         $order->state_id = $state->id;
