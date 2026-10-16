@@ -1,0 +1,68 @@
+{
+  "backendStories": [
+    {
+      "id": "hu17-configuracion-servicio-notificaciones",
+      "title": "HU-17 Configuración de servicio de notificaciones",
+      "filter": "PushNotificationConfigurationTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu18-creacion-orden",
+      "title": "HU-18 Creación de orden",
+      "filter": "OrderWithWastesStoreControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu19-asignacion-recolector",
+      "title": "HU-19 Asignación de recolector",
+      "filter": "OrderAssignedStoreControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu20-empezar-servicio",
+      "title": "HU-20 Empezar servicio",
+      "filter": "OrderInitStoreControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu21-visualizacion-recolector",
+      "title": "HU-21 Visualización del recolector",
+      "filter": "UserOrderTrackingControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu22-visualizacion-ruta",
+      "title": "HU-22 Visualización de ruta",
+      "filter": "CollectorPickupPointsRouteTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu23-reprogramacion-orden",
+      "title": "HU-23 Reprogramación de órden",
+      "filter": "OrderRescheduleControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu24-confirmacion-recogida",
+      "title": "HU-24 Confirmación de recogida",
+      "filter": "CollectorConfirmPickupControllerTest",
+      "sprint": 3,
+      "enabled": true
+    },
+    {
+      "id": "hu25-cancelacion-orden",
+      "title": "HU-25 Cancelación de orden",
+      "filter": "OrderCancelControllerTest",
+      "sprint": 3,
+      "enabled": true
+    }
+  ]
+}
+

@@ -34,7 +34,7 @@ class OrderInitStoreController extends Controller
             $token = $request->bearerToken();
 
             $orders = $orders->map(function ($order) use ($orderService, $token) {
-                return $orderService->enrichOrder($order, $token);
+                return $orderService->enrichOrder($order, $token ?? '');
             });
 
             return response()->json([

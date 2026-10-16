@@ -38,7 +38,7 @@ class OrderCancelController extends Controller
 
             $token = $request->bearerToken();
 
-            $order = $orderService->enrichOrder($order, $token);
+            $order = $orderService->enrichOrder($order, $token ?? '');
 
             return response()->json([
                 'success' => true,
