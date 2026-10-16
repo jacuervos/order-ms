@@ -14,19 +14,29 @@ class OrderByUserController extends Controller
     {
         $orderService = new OrderService();
 
-        $userId = $request->attributes->get('user_id');
+        $token = $request->bearerToken() ?? '';
+        $userId = $request->attributes->get('user_id') ?? $this->getUserIdFromToken($token);
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, Order> $orders */
         $orders = Order::where('user_id', $userId)
             ->orderBy('id', 'DESC')
             ->get();
 
-        $token = $request->bearerToken();
-
         foreach ($orders as $order) {
             $orderService->enrichOrder($order, $token);
         }
 
         return OrderResource::collection($orders);
+    }
+
+    private function getUserIdFromToken(string $token): ?int
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+        return isset($payload['sub']) ? (int) $payload['sub'] : (isset($payload['user_id']) ? (int) $payload['user_id'] : null);
     }
 }

@@ -62,7 +62,27 @@
       "filter": "OrderCancelControllerTest",
       "sprint": 3,
       "enabled": true
+    },
+    {
+      "id": "hu26-historial-ordenes-usuario",
+      "title": "HU-26 Historial de ordenes usuario",
+      "filter": "OrderByUserControllerTest",
+      "sprint": 4,
+      "enabled": true
+    },
+    {
+      "id": "hu27-historial-ordenes-recolector",
+      "title": "HU-27 Historial de ordenes recolector",
+      "filter": "OrderByCollectorControllerTest",
+      "sprint": 4,
+      "enabled": true
+    },
+    {
+      "id": "hu28-historial-ordenes-administrador",
+      "title": "HU-28 Historial de ordenes administrador",
+      "filter": "OrderIndexControllerTest",
+      "sprint": 4,
+      "enabled": true
     }
   ]
 }
-

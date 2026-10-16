@@ -25,7 +25,7 @@ class OrderIndexController extends Controller
             ? Carbon::parse($request->date)
             : Carbon::today();
         $orders = Order::whereDate('date', $date)->get();
-        $token = $request->bearerToken();
+        $token = $request->bearerToken() ?? '';
         foreach ($orders as $order) {
             $orderService->enrichOrder($order, $token);
         }
@@ -38,7 +38,7 @@ class OrderIndexController extends Controller
 
         $orders = Order::orderBy('id', 'DESC')
             ->paginate(10);
-        $token = $request->bearerToken();
+        $token = $request->bearerToken() ?? '';
         foreach ($orders as $order) {
             $orderService->enrichOrder($order, $token);
         }
