@@ -58,6 +58,44 @@ class PushNotificationConfigurationTest extends TestCase
         });
     }
 
+    public function test_push_notification_service_builds_jwt_and_fetches_oauth_token_from_credentials_file(): void
+    {
+        $res = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        openssl_pkey_export($res, $privateKeyPem);
+
+        $credentials = [
+            'client_email' => 'oauth-test@test-project.iam.gserviceaccount.com',
+            'private_key' => $privateKeyPem,
+        ];
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'fcm_creds_');
+        file_put_contents($tmpFile, json_encode($credentials));
+
+        config()->set('services.push_notifications.firebase_project_id', 'green-city-test');
+        config()->set('services.push_notifications.firebase_credentials_path', $tmpFile);
+        config()->set('services.push_notifications.firebase_credentials_json', null);
+
+        Cache::forget('firebase_push_access_token_' . hash('sha256', $credentials['client_email']));
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'fresh-oauth-access-token',
+            ], 200),
+            'https://fcm.googleapis.com/v1/projects/green-city-test/messages:send' => Http::response([
+                'name' => 'projects/green-city-test/messages/999',
+            ], 200),
+        ]);
+
+        $service = new PushNotificationService();
+        $sent = $service->sendToToken('device-token-xyz', 'Título', 'Cuerpo', ['k' => 'v']);
+
+        @unlink($tmpFile);
+        $this->assertTrue($sent);
+    }
+
     public function test_push_notification_throws_exception_when_not_configured(): void
     {
         config()->set('services.push_notifications.firebase_project_id', null);
@@ -70,4 +108,3 @@ class PushNotificationConfigurationTest extends TestCase
         $service->sendToToken('device-token', 'Titulo', 'Mensaje');
     }
 }
-

@@ -6,8 +6,11 @@ use App\Http\Middleware\AuthenticateJwt;
 use App\Http\Middleware\RoleMiddleware;
 use App\Models\CollectorOrder;
 use App\Models\Order;
+use App\Models\OrderTypeWaste;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
+use Illuminate\Support\Facades\Http;
 use Tests\Feature\Support\CreatesOrderMsSchema;
 use Tests\TestCase;
 
@@ -20,6 +23,11 @@ class CollectorPickupPointsRouteTest extends TestCase
         parent::setUp();
         $this->prepareOrderMsSchema();
         $this->withoutMiddleware([AuthenticateJwt::class, RoleMiddleware::class]);
+
+        config()->set('services.user_service.url', 'http://user.test');
+        Http::fake([
+            'http://user.test/user-points/*' => Http::response(['success' => true], 200),
+        ]);
     }
 
     public function test_collector_can_view_assigned_route_pickup_points(): void
@@ -36,6 +44,13 @@ class CollectorPickupPointsRouteTest extends TestCase
             'state_id' => $serviceStartStateId,
         ]);
 
+        OrderTypeWaste::create([
+            'order_id' => $activeOrder->id,
+            'type_waste_id' => 1,
+            'weight' => 3.0,
+            'points' => 30,
+        ]);
+
         $notStartedOrder = Order::create([
             'user_id' => 16,
             'latitude' => 4.63,
@@ -50,13 +65,20 @@ class CollectorPickupPointsRouteTest extends TestCase
         $authMock = $this->createMock(AuthMicroserviceService::class);
         $authMock->method('getAuthenticatedCollector')->willReturn([
             'collector' => ['id' => 12],
+            'user_name' => 'Maria Lopez',
+            'user_phone' => '3001234567',
         ]);
         $authMock->method('getUserById')->willReturn([
             'id' => 15,
             'name' => 'Maria Lopez',
             'phone' => '3001234567',
+            'firebase_token' => 'fcm-user-15',
         ]);
         $this->app->instance(AuthMicroserviceService::class, $authMock);
+
+        $pushMock = $this->createMock(PushNotificationService::class);
+        $pushMock->method('sendToToken')->willReturn(true);
+        $this->app->instance(PushNotificationService::class, $pushMock);
 
         $token = $this->buildFakeJwt(99, 'Recolector');
 
@@ -69,6 +91,18 @@ class CollectorPickupPointsRouteTest extends TestCase
         $response->assertJsonPath('data.pickup_points.0.order_id', $activeOrder->id);
         $response->assertJsonPath('data.pickup_points.0.user_name', 'Maria Lopez');
         $response->assertJsonPath('data.pickup_points.0.state_name', State::SERVICE_START);
+
+        $detailsResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/orders/{$activeOrder->id}/details");
+        $detailsResponse->assertOk()
+            ->assertJsonPath('data.order.id', $activeOrder->id);
+
+        $pickedResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/{$activeOrder->id}/picked-up");
+        $pickedResponse->assertOk();
+
+        $completeResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/{$activeOrder->id}/complete");
+        $completeResponse->assertOk();
     }
 }
-

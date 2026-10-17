@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderTypeWaste;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
 use Illuminate\Support\Facades\Http;
 use Tests\Feature\Support\CreatesOrderMsSchema;
 use Tests\TestCase;
@@ -59,14 +60,28 @@ class CollectorConfirmPickupControllerTest extends TestCase
         $authMock = $this->createMock(AuthMicroserviceService::class);
         $authMock->method('getAuthenticatedCollector')->willReturn([
             'collector' => ['id' => 14],
+            'user_name' => 'Pedro Usuario',
         ]);
         $authMock->method('getUserById')->willReturn([
             'id' => 30,
             'name' => 'Pedro Usuario',
+            'firebase_token' => 'fcm-token-30',
         ]);
         $this->app->instance(AuthMicroserviceService::class, $authMock);
 
+        $pushMock = $this->createMock(PushNotificationService::class);
+        $pushMock->method('sendToToken')->willReturn(true);
+        $this->app->instance(PushNotificationService::class, $pushMock);
+
         $token = $this->buildFakeJwt(88, 'Recolector');
+
+        $pointsResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/pickup-points');
+        $pointsResponse->assertOk();
+
+        $detailsResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson("/api/orders/{$order->id}/details");
+        $detailsResponse->assertOk();
 
         $pickedResponse = $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/orders/{$order->id}/picked-up");
@@ -79,6 +94,11 @@ class CollectorConfirmPickupControllerTest extends TestCase
             'id' => $order->id,
             'state_id' => $pickedUpStateId,
         ]);
+
+        // Calling picked-up again when already picked up returns 200
+        $alreadyPickedResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/{$order->id}/picked-up");
+        $alreadyPickedResponse->assertOk();
 
         $completeResponse = $this->withHeader('Authorization', "Bearer {$token}")
             ->putJson("/api/orders/{$order->id}/complete");
@@ -93,4 +113,3 @@ class CollectorConfirmPickupControllerTest extends TestCase
         ]);
     }
 }
-

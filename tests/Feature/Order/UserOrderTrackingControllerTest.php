@@ -38,6 +38,7 @@ class UserOrderTrackingControllerTest extends TestCase
     public function test_user_can_view_assigned_collector_location_when_in_service(): void
     {
         $serviceStartStateId = State::where('name', State::SERVICE_START)->value('id');
+        $rescheduledStateId = State::where('name', State::RESCHEDULED)->value('id');
 
         $order = Order::create([
             'user_id' => 25,
@@ -45,6 +46,14 @@ class UserOrderTrackingControllerTest extends TestCase
             'longitude' => -74.08,
             'date' => '2026-10-26',
             'state_id' => $serviceStartStateId,
+        ]);
+
+        Order::create([
+            'user_id' => 25,
+            'latitude' => 4.62,
+            'longitude' => -74.09,
+            'date' => '2026-10-28',
+            'state_id' => $rescheduledStateId,
         ]);
 
         OrderTypeWaste::create([
@@ -91,6 +100,24 @@ class UserOrderTrackingControllerTest extends TestCase
         $activeResponse->assertJsonPath('data.0.id', $order->id);
         $activeResponse->assertJsonPath('data.0.status', State::SERVICE_START);
         $activeResponse->assertJsonPath('data.0.collector.name', 'Carlos Recolector');
+
+        $rescheduleResponse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/orders/reschedule');
+        $rescheduleResponse->assertOk();
+        $rescheduleResponse->assertJsonPath('success', true);
+
+        // Edge cases: missing token, invalid token, and user without orders
+        $this->withoutHeader('Authorization')->getJson('/api/collector/location')->assertStatus(401);
+        $this->withoutHeader('Authorization')->getJson('/api/orders/active')->assertStatus(401);
+        $this->withoutHeader('Authorization')->getJson('/api/orders/reschedule')->assertStatus(401);
+
+        $this->withHeader('Authorization', 'Bearer invalid-token')
+            ->getJson('/api/collector/location')
+            ->assertStatus(401);
+
+        $emptyUserToken = $this->buildFakeJwt(999, 'Usuario');
+        $this->withHeader('Authorization', "Bearer {$emptyUserToken}")
+            ->getJson('/api/collector/location')
+            ->assertStatus(404);
     }
 }
-

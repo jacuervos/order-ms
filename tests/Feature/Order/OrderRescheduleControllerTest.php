@@ -8,6 +8,7 @@ use App\Models\CollectorOrder;
 use App\Models\Order;
 use App\Models\State;
 use App\Services\AuthMicroserviceService;
+use App\Services\PushNotificationService;
 use Tests\Feature\Support\CreatesOrderMsSchema;
 use Tests\TestCase;
 
@@ -41,13 +42,27 @@ class OrderRescheduleControllerTest extends TestCase
         ]);
 
         $authMock = $this->createMock(AuthMicroserviceService::class);
-        $authMock->method('getCollectorById')->willReturn(['id' => 9, 'user_id' => 50]);
-        $authMock->method('getUserById')->willReturn(['id' => 50]);
+        $authMock->method('getCollectorById')->willReturn([
+            'id' => 9,
+            'user_id' => 50,
+            'firebase_token' => 'fcm-collector-9',
+        ]);
+        $authMock->method('getUserById')->willReturn([
+            'id' => 50,
+            'firebase_token' => 'fcm-user-20',
+        ]);
         $this->app->instance(AuthMicroserviceService::class, $authMock);
 
-        $response = $this->putJson("/api/orders/update-date-state/{$order->id}", [
-            'date' => '2026-10-30',
-        ]);
+        $pushMock = $this->createMock(PushNotificationService::class);
+        $pushMock->method('sendToToken')->willReturn(true);
+        $this->app->instance(PushNotificationService::class, $pushMock);
+
+        $token = $this->buildFakeJwt(20, 'Usuario');
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/update-date-state/{$order->id}", [
+                'date' => '2026-10-30',
+            ]);
 
         $response->assertOk();
         $response->assertJsonPath('date', '2026-10-30');
@@ -62,6 +77,25 @@ class OrderRescheduleControllerTest extends TestCase
         $this->assertDatabaseMissing('collector_orders', [
             'order_id' => $order->id,
         ]);
+
+        // Reassign and test updateOrderReschedule and updateOrderRecolectorReschedule and __invoke
+        CollectorOrder::create(['order_id' => $order->id, 'collector_id' => 9]);
+        $dateOnlyRes = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/update-date/{$order->id}", [
+                'date' => '2026-11-05',
+            ]);
+        $dateOnlyRes->assertOk()
+            ->assertJsonPath('date', '2026-11-05');
+
+        CollectorOrder::create(['order_id' => $order->id, 'collector_id' => 9]);
+        $collectorRescheduleRes = $this->withHeader('Authorization', "Bearer {$token}")
+            ->putJson("/api/orders/update-state/{$order->id}");
+        $collectorRescheduleRes->assertOk()
+            ->assertJsonPath('state_id', $rescheduledStateId);
+
+        $directUpdateRes = $this->putJson("/api/orders/{$order->id}", [
+            'date' => '2026-11-10',
+        ]);
+        $directUpdateRes->assertOk();
     }
 }
-
