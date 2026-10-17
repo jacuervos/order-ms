@@ -65,6 +65,65 @@ class OrderAssignedStoreControllerTest extends TestCase
             'id' => $order->id,
             'state_id' => $assignedStateId,
         ]);
+
+        // Test when collector directly has firebase_token and push service throws exception
+        $pushMock = $this->createMock(\App\Services\PushNotificationService::class);
+        $pushMock->method('sendToToken')->willThrowException(new \RuntimeException('FCM error'));
+        $this->app->instance(\App\Services\PushNotificationService::class, $pushMock);
+
+        $authMock = $this->createMock(\App\Services\AuthMicroserviceService::class);
+        $authMock->method('getCollectorById')->willReturn([
+            'id' => 5,
+            'firebase_token' => 'collector-direct-fcm-token',
+        ]);
+        $this->app->instance(\App\Services\AuthMicroserviceService::class, $authMock);
+
+        $order2 = Order::create([
+            'user_id' => 10,
+            'latitude' => 4.65,
+            'longitude' => -74.05,
+            'date' => '2026-10-26',
+            'state_id' => $creationStateId,
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer test-token')
+            ->postJson('/api/orders/assign-collector', [
+                'order_id' => $order2->id,
+                'collector_id' => 5,
+            ])
+            ->assertCreated();
+
+        // Test when neither collector nor user has a firebase_token
+        $authMockEmpty = $this->createMock(\App\Services\AuthMicroserviceService::class);
+        $authMockEmpty->method('getCollectorById')->willReturn(['id' => 5, 'user_id' => 10]);
+        $authMockEmpty->method('getUserById')->willReturn(['id' => 10]);
+        $this->app->instance(\App\Services\AuthMicroserviceService::class, $authMockEmpty);
+
+        $order3 = Order::create([
+            'user_id' => 10,
+            'latitude' => 4.65,
+            'longitude' => -74.05,
+            'date' => '2026-10-26',
+            'state_id' => $creationStateId,
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer test-token')
+            ->postJson('/api/orders/assign-collector', [
+                'order_id' => $order3->id,
+                'collector_id' => 5,
+            ])
+            ->assertCreated();
+
+        // Test database exception rollback (500)
+        \Illuminate\Support\Facades\Schema::drop('collector_orders');
+
+        $this->withHeader('Authorization', 'Bearer test-token')
+            ->postJson('/api/orders/assign-collector', [
+                'order_id' => $order->id,
+                'collector_id' => 5,
+            ])
+            ->assertStatus(500)
+            ->assertJsonPath('success', false);
     }
 }
 

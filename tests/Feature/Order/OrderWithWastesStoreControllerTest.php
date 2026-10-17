@@ -72,5 +72,26 @@ class OrderWithWastesStoreControllerTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonPath('success', false);
     }
+
+    public function test_create_order_handles_database_exception_and_rolls_back(): void
+    {
+        \Illuminate\Support\Facades\Schema::drop('order_type_wastes');
+
+        $response = $this->postJson('/api/orders/with-wastes', [
+            'latitude' => 4.60971,
+            'longitude' => -74.08175,
+            'date' => '2026-10-25',
+            'items' => [
+                [
+                    'type_waste_id' => 1,
+                    'weight' => 3.5,
+                    'points' => 35,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(500)
+            ->assertJsonPath('success', false);
+    }
 }
 

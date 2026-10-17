@@ -73,6 +73,15 @@ class OrderInitStoreControllerTest extends TestCase
             'id' => $order2->id,
             'state_id' => $serviceStartStateId,
         ]);
+
+        State::where('name', State::SERVICE_START)->delete();
+
+        $failResponse = $this->postJson('/api/orders/init', [
+            'order_ids' => [$order1->id],
+        ]);
+
+        $failResponse->assertStatus(500)
+            ->assertJsonPath('success', false);
     }
 }
 

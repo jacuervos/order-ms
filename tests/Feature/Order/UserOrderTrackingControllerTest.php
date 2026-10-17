@@ -115,9 +115,69 @@ class UserOrderTrackingControllerTest extends TestCase
             ->getJson('/api/collector/location')
             ->assertStatus(401);
 
+        $this->withHeader('Authorization', 'Bearer invalid-token')
+            ->getJson('/api/orders/active')
+            ->assertStatus(401);
+
+        $this->withHeader('Authorization', 'Bearer invalid-token')
+            ->getJson('/api/orders/reschedule')
+            ->assertStatus(401);
+
         $emptyUserToken = $this->buildFakeJwt(999, 'Usuario');
         $this->withHeader('Authorization', "Bearer {$emptyUserToken}")
             ->getJson('/api/collector/location')
             ->assertStatus(404);
+
+        // User with order that has no assigned collector yet (404)
+        $unassignedUserToken = $this->buildFakeJwt(777, 'Usuario');
+        Order::create([
+            'user_id' => 777,
+            'latitude' => 4.61,
+            'longitude' => -74.08,
+            'date' => '2026-10-26',
+            'state_id' => $serviceStartStateId,
+        ]);
+        $this->withHeader('Authorization', "Bearer {$unassignedUserToken}")
+            ->getJson('/api/collector/location')
+            ->assertStatus(404)
+            ->assertJsonPath('message', 'Aún no se ha asignado un recolector');
+    }
+
+    public function test_tracking_handles_auth_service_and_database_exceptions(): void
+    {
+        $serviceStartStateId = State::where('name', State::SERVICE_START)->value('id');
+        $order = Order::create([
+            'user_id' => 25,
+            'latitude' => 4.61,
+            'longitude' => -74.08,
+            'date' => '2026-10-26',
+            'state_id' => $serviceStartStateId,
+        ]);
+        CollectorOrder::create(['order_id' => $order->id, 'collector_id' => 8]);
+
+        $failingAuthMock = $this->createMock(AuthMicroserviceService::class);
+        $failingAuthMock->method('getCollectorById')->willThrowException(new \RuntimeException('Auth MS down'));
+        $this->app->instance(AuthMicroserviceService::class, $failingAuthMock);
+
+        $token = $this->buildFakeJwt(25, 'Usuario');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/collector/location')
+            ->assertStatus(500);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/orders/active')
+            ->assertOk()
+            ->assertJsonPath('data.0.collector.name', 'Recolector');
+
+        \Illuminate\Support\Facades\Schema::drop('orders');
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/orders/active')
+            ->assertStatus(500);
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/orders/reschedule')
+            ->assertStatus(500);
     }
 }

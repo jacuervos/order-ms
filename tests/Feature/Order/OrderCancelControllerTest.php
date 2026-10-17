@@ -69,6 +69,15 @@ class OrderCancelControllerTest extends TestCase
             'order_id' => $order->id,
             'points' => 0,
         ]);
+
+        State::where('name', State::CANCEL)->delete();
+
+        $failResponse = $this->postJson('/api/orders/cancel', [
+            'order_id' => $order->id,
+        ]);
+
+        $failResponse->assertStatus(500)
+            ->assertJsonPath('success', false);
     }
 }
 
