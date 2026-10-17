@@ -75,6 +75,9 @@ class OrderIndexControllerTest extends TestCase
         $dashboardResponse->assertOk();
         $dashboardResponse->assertJsonCount(1, 'data');
         $dashboardResponse->assertJsonPath('data.0.id', $order1->id);
+
+        $this->getJson('/api/orders/dashboard')->assertOk();
+        (new \App\Http\Controllers\OrderIndexController())();
     }
 }
 

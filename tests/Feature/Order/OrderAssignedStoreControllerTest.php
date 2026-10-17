@@ -26,8 +26,9 @@ class OrderAssignedStoreControllerTest extends TestCase
 
         Http::fake([
             'http://waste.test/type-wastes' => Http::response(['data' => [['id' => 1, 'name' => 'Plástico']]], 200),
-            'http://user.test/user/*' => Http::response(['data' => ['id' => 10, 'name' => 'Ana Usuario']], 200),
-            'http://collector.test/collector/*' => Http::response(['data' => ['id' => 5, 'name' => 'Carlos Recolector']], 200),
+            'http://user.test/user/*' => Http::response(['data' => ['id' => 10, 'name' => 'Ana Usuario', 'firebase_token' => 'user-fcm-token']], 200),
+            'http://collector.test/collector/*' => Http::response(['data' => ['id' => 5, 'user_id' => 10, 'name' => 'Carlos Recolector']], 200),
+            '*' => Http::response(['name' => 'projects/test/messages/1'], 200),
         ]);
     }
 
@@ -44,10 +45,11 @@ class OrderAssignedStoreControllerTest extends TestCase
             'state_id' => $creationStateId,
         ]);
 
-        $response = $this->postJson('/api/orders/assign-collector', [
-            'order_id' => $order->id,
-            'collector_id' => 5,
-        ]);
+        $response = $this->withHeader('Authorization', 'Bearer test-token')
+            ->postJson('/api/orders/assign-collector', [
+                'order_id' => $order->id,
+                'collector_id' => 5,
+            ]);
 
         $response->assertCreated();
         $response->assertJsonPath('success', true);
